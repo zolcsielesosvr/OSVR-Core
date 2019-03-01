@@ -132,32 +132,47 @@ set_target_properties(com_osvr_VideoBasedHMDTracker PROPERTIES
 ###
 # Calibration utility
 ###
+set(CALIB_SOURCES
+    VideoTrackerCalibrationUtility.cpp
+    ConfigurationParser.h
+    CVTwoStepProgressBar.h
+    ImageSource.cpp
+    ImageSource.h
+    ImageSourceFactories.h
+    SetupSensors.h
+    ${OSVR_VIDEOTRACKERSHARED_SOURCES_IO})
 if(WIN32)
-    set(CALIB_SOURCES
-        VideoTrackerCalibrationUtility.cpp
-        ConfigurationParser.h
-        CVTwoStepProgressBar.h
-        ImageSource.cpp
-        ImageSource.h
-        ImageSourceFactories.h
-        SetupSensors.h
+    list(APPEND CALIB_SOURCES
         DirectShowHDKCameraFactory.h
         DirectShowImageSource.cpp
-        DirectShowToCV.h
-        ${OSVR_VIDEOTRACKERSHARED_SOURCES_IO})
+        DirectShowToCV.h)
+else()
+    list(APPEND CALIB_SOURCES
+        UVCImageSource.cpp)
+endif()
     add_executable(VideoTrackerCalibrationUtility ${CALIB_SOURCES})
+if(WIN32)
     target_link_libraries(VideoTrackerCalibrationUtility
         PRIVATE
         vbtracker-core
         JsonCpp::JsonCpp
         osvrServer
         directshow-camera)
+else()
+    target_link_libraries(VideoTrackerCalibrationUtility
+        PRIVATE
+        vbtracker-core
+        JsonCpp::JsonCpp
+        osvrServer
+        ${libuvc_LIBRARIES}
+        ${LIBUSB1_LIBRARIES})
+    target_include_directories(VideoTrackerCalibrationUtility PRIVATE ${libuvc_INCLUDE_DIRS} ${LIBUSB1_INCLUDE_DIRS})
+endif()
     set_target_properties(VideoTrackerCalibrationUtility PROPERTIES
         FOLDER "OSVR Plugins/Video-Based Tracker")
 
     install(TARGETS VideoTrackerCalibrationUtility
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR} COMPONENT Runtime)
-endif()
 
 
 if(BUILD_TESTING)

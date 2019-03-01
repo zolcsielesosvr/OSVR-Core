@@ -424,7 +424,11 @@ int main(int argc, char *argv[]) {
     params.streamBeaconDebugInfo = true; // want the data being recorded there.
 
     /// Third step: Open cam and construct a tracker.
+#ifdef _WIN32
     auto src = openHDKCameraDirectShow();
+#else
+    auto src = openHDKCameraUVC();
+#endif
     if (!src || !src->ok()) {
         err << "Couldn't find or access the IR camera!" << endl;
         return withAnError();
