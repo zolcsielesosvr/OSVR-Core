@@ -94,7 +94,8 @@ if(WIN32)
         DirectShowToCV.h)
 else()
     list(APPEND PLUGIN_SOURCES
-        UVCImageSource.cpp)
+        UVCImageSource.cpp
+        FakeImageSource.cpp)
 endif()
 
 osvr_add_plugin(NAME com_osvr_VideoBasedHMDTracker
@@ -140,6 +141,7 @@ set(CALIB_SOURCES
     ImageSource.h
     ImageSourceFactories.h
     SetupSensors.h
+    FakeImageSource.cpp
     ${OSVR_VIDEOTRACKERSHARED_SOURCES_IO})
 if(WIN32)
     list(APPEND CALIB_SOURCES

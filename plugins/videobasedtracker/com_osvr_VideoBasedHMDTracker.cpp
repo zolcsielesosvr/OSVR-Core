@@ -319,13 +319,13 @@ class ConfiguredDeviceConstructor {
             return (id == 16) || (id == 17) || (id == 19) || (id == 20);
         };
 
-        /// @todo get this (and the path) from the config file
-        bool fakeImages = false;
+        bool fakeImages = root.get("fakeImages", false).asBool();
         if (fakeImages) {
             /// Immediately create a "fake images" tracker.
-            auto path = std::string{};
+            std::string path = root.get("path", std::string{}).asString();
+            std::string extension = root.get("extension", std::string{"tif"}).asString();
             // fake images
-            auto src = osvr::vbtracker::openImageFileSequence(path);
+            auto src = osvr::vbtracker::openImageFileSequence(path, extension);
             if (!src) {
                 return OSVR_RETURN_FAILURE;
             }

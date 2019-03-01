@@ -370,36 +370,47 @@ class TrackerCalibrationApp {
     bool m_save = false;
 };
 
+const Json::Value *getSourceParams(const Json::Value &root)
+{
+    const Json::Value &drivers = root["drivers"];
+    for (int i = 0; i < drivers.size(); i++)
+    {
+        if (drivers[i]["driver"] == "VideoBasedHMDTracker")
+        {
+            return &drivers[i]["params"];
+        }
+    }
+    return nullptr;
+}
+
 int main(int argc, char *argv[]) {
     ConfigParams params;
 
     /// First step: get the config.
-    {
-        std::string configName(osvr::server::getDefaultConfigFilename());
-        if (argc > 1) {
-            configName = argv[1];
-        } else {
-            out << "Using default config file - pass a filename on the command "
-                   "line to use a different one."
-                << endl;
-        }
+    std::string configName(osvr::server::getDefaultConfigFilename());
+    if (argc > 1) {
+        configName = argv[1];
+    } else {
+        out << "Using default config file - pass a filename on the command "
+               "line to use a different one."
+            << endl;
+    }
 
-        Json::Value root;
-        {
-            out << "Using config file '" << configName << "'" << endl;
-            std::ifstream configFile(configName);
-            if (!configFile.good()) {
-                err << "Could not open config file!" << endl;
-                err << "Searched in the current directory; file may be "
-                       "misspelled, missing, or in a different directory."
-                    << endl;
-                return withAnError();
-            }
-            Json::Reader reader;
-            if (!reader.parse(configFile, root)) {
-                err << "Could not parse config file as JSON!" << endl;
-                return withAnError();
-            }
+    Json::Value root;
+    {
+        out << "Using config file '" << configName << "'" << endl;
+        std::ifstream configFile(configName);
+        if (!configFile.good()) {
+            err << "Could not open config file!" << endl;
+            err << "Searched in the current directory; file may be "
+                   "misspelled, missing, or in a different directory."
+                << endl;
+            return withAnError();
+        }
+        Json::Reader reader;
+        if (!reader.parse(configFile, root)) {
+            err << "Could not parse config file as JSON!" << endl;
+            return withAnError();
         }
         auto trackerParams = findVideoTrackerParams(root["drivers"]);
         if (trackerParams.isNull()) {
@@ -424,14 +435,29 @@ int main(int argc, char *argv[]) {
     params.streamBeaconDebugInfo = true; // want the data being recorded there.
 
     /// Third step: Open cam and construct a tracker.
+    const Json::Value *srcParams = getSourceParams(root);
+    ImageSourcePtr src;
+    bool fakeImages = srcParams && srcParams->get("fakeImages", false).asBool();
+    if (fakeImages) {
+        /// Immediately create a "fake images" tracker.
+        std::string path = srcParams->get("path", std::string{}).asString();
+        std::string extension = srcParams->get("extension", std::string{"tif"}).asString();
+        // fake images
+        src = osvr::vbtracker::openImageFileSequence(path, extension);
+        if (!src || !src->ok()) {
+            err << "Couldn't find or access the image file sequence!" << endl;
+            return withAnError();
+        }
+    } else {
 #ifdef _WIN32
-    auto src = openHDKCameraDirectShow();
+        src = openHDKCameraDirectShow();
 #else
-    auto src = openHDKCameraUVC();
+        src = openHDKCameraUVC();
 #endif
-    if (!src || !src->ok()) {
-        err << "Couldn't find or access the IR camera!" << endl;
-        return withAnError();
+        if (!src || !src->ok()) {
+            err << "Couldn't find or access the IR camera!" << endl;
+            return withAnError();
+        }
     }
 
     // Set the number of threads for OpenCV to use.

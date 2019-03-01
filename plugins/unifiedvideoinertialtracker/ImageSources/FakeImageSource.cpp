@@ -41,7 +41,7 @@ namespace osvr {
 namespace vbtracker {
     class FakeImageSource : public ImageSource {
       public:
-        FakeImageSource(std::string const &imagesDir);
+        FakeImageSource(std::string const &imagesDir, std::string const &extension);
         virtual ~FakeImageSource() {}
 
         bool ok() const override { return !m_images.empty(); }
@@ -57,22 +57,22 @@ namespace vbtracker {
         osvr::util::time::TimeValue m_timestamp = {};
     };
 
-    ImageSourcePtr openImageFileSequence(std::string const &dir) {
-        auto ret = ImageSourcePtr{new FakeImageSource{dir}};
+    ImageSourcePtr openImageFileSequence(std::string const &dir, std::string const &extension) {
+        auto ret = ImageSourcePtr{new FakeImageSource{dir, extension}};
         if (!ret->ok()) {
             // if we couldn't load, reset the pointer right now.
             ret.reset();
         }
         return ret;
     }
-    FakeImageSource::FakeImageSource(std::string const &imagesDir) {
+    FakeImageSource::FakeImageSource(std::string const &imagesDir, std::string const &extension) {
 
         // Read a vector of images, which we'll loop through.
         for (int imageNum = 1;; ++imageNum) {
             std::ostringstream fileName;
             fileName << imagesDir << "/";
             fileName << std::setfill('0') << std::setw(4) << imageNum;
-            fileName << ".tif";
+            fileName << "." << extension;
             cv::Mat image;
             std::cout << "Trying to read image from " << fileName.str()
                       << std::endl;

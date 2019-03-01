@@ -53,7 +53,7 @@ namespace vbtracker {
 
     /// Factory method to open a directory of tif files named 0001.tif and
     /// onward as an image source (looping)
-    ImageSourcePtr openImageFileSequence(std::string const &dir);
+    ImageSourcePtr openImageFileSequence(std::string const &dir, std::string const &extension);
 
     /// Factory method to wrap an image source, already determined to be an
     /// Oculus DK2 camera, with unscrambling and keep-alive code.

@@ -28,6 +28,7 @@
 #include "HDKData.h"
 #include "MakeHDKTrackingSystem.h"
 #include "TrackerThread.h"
+#include "HDKLedIdentifierFactory.h"
 
 // ImageSources mini-library
 #include "ImageSources/ImageSource.h"
@@ -398,6 +399,24 @@ class ConfiguredDeviceConstructor {
         // This is in a separate function/header for sharing and for clarity.
         auto config = osvr::vbtracker::parseConfigParams(root);
 
+        auto trackingSystem = osvr::vbtracker::makeHDKTrackingSystem(config);
+
+        bool fakeImages = root.get("fakeImages", false).asBool();
+        if (fakeImages) {
+            /// Immediately create a "fake images" tracker.
+            std::string path = root.get("path", std::string{}).asString();
+            std::string extension = root.get("extension", std::string{"tif"}).asString();
+            // fake images
+            auto src = osvr::vbtracker::openImageFileSequence(path, extension);
+            if (!src) {
+                return OSVR_RETURN_FAILURE;
+            }
+            auto newTracker = osvr::pluginkit::registerObjectForDeletion(
+                ctx, new UnifiedVideoInertialTracker(ctx, std::move(src), config,
+                                              std::move(trackingSystem)));
+            auto camParams = osvr::vbtracker::getSimulatedHDKCameraParameters();
+            return OSVR_RETURN_SUCCESS;
+        }
 #ifdef _WIN32
         auto cam = osvr::vbtracker::openHDKCameraDirectShow(config.highGain);
 #else // !_WIN32
@@ -418,8 +437,6 @@ class ConfiguredDeviceConstructor {
             return OSVR_RETURN_FAILURE;
         }
 
-        auto trackingSystem = osvr::vbtracker::makeHDKTrackingSystem(config);
-        
         // OK, now that we have our parameters, create the device.
         osvr::pluginkit::PluginContext context(ctx);
         auto newTracker = osvr::pluginkit::registerObjectForDeletion(
