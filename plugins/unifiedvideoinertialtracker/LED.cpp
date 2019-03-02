@@ -41,21 +41,21 @@ namespace vbtracker {
         // If we don't have an identifier, then our ID is unknown.
         // Otherwise, try and find it.
         if (!m_identifier) {
-            m_id = ZeroBasedBeaconId(SENTINEL_NO_IDENTIFIER_OBJECT);
+            m_id = SENTINEL_NO_IDENTIFIER_OBJECT;
         } else {
             auto const oldId = m_id;
             m_id = m_identifier->getId(m_id, m_brightnessHistory, m_lastBright,
                                        blobsKeepId);
             using Id = ZeroBasedBeaconId;
-            if (Id(SENTINEL_MARKED_MISIDENTIFIED) == oldId &&
-                (Id(SENTINEL_NO_IDENTIFIER_OBJECT_OR_INSUFFICIENT_DATA) ==
+            if (SENTINEL_MARKED_MISIDENTIFIED == oldId &&
+                (SENTINEL_NO_IDENTIFIER_OBJECT_OR_INSUFFICIENT_DATA ==
                      m_id ||
-                 Id(SENTINEL_NO_PATTERN_RECOGNIZED_DESPITE_SUFFICIENT_DATA) ==
+                 SENTINEL_NO_PATTERN_RECOGNIZED_DESPITE_SUFFICIENT_DATA ==
                      m_id)) {
                 /// Make the "misidentified" sentinel a little stickier than
                 /// "insufficient data" or "no pattern recognized" so we can see
                 /// it on the debug view.
-                m_id = Id(SENTINEL_MARKED_MISIDENTIFIED);
+                m_id = SENTINEL_MARKED_MISIDENTIFIED;
             }
 
             /// @todo Identify "theft" is possible and takes place - right now
@@ -74,12 +74,17 @@ namespace vbtracker {
     }
 
     void Led::markMisidentified() {
-        m_id = ZeroBasedBeaconId(SENTINEL_MARKED_MISIDENTIFIED);
+        m_id = SENTINEL_MARKED_MISIDENTIFIED;
         if (!m_brightnessHistory.empty()) {
             m_brightnessHistory.clear();
             m_brightnessHistory.push_back(getMeasurement().brightness);
         }
     }
 
+    const ZeroBasedBeaconId SENTINEL_NO_IDENTIFIER_OBJECT_OR_INSUFFICIENT_DATA = ZeroBasedBeaconId(-1);
+    const ZeroBasedBeaconId SENTINEL_INSUFFICIENT_EXTREMA_DIFFERENCE = ZeroBasedBeaconId(-2);
+    const ZeroBasedBeaconId SENTINEL_NO_PATTERN_RECOGNIZED_DESPITE_SUFFICIENT_DATA = ZeroBasedBeaconId(-3);
+    const ZeroBasedBeaconId SENTINEL_NO_IDENTIFIER_OBJECT = ZeroBasedBeaconId(-4);
+    const ZeroBasedBeaconId SENTINEL_MARKED_MISIDENTIFIED = ZeroBasedBeaconId(-5);
 } // End namespace vbtracker
 } // End namespace osvr

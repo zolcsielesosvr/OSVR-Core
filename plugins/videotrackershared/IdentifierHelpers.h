@@ -22,8 +22,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INCLUDED_IdentifierHelpers_h_GUID_B6F81E02_BE7B_4382_12E5_87296135997D
-#define INCLUDED_IdentifierHelpers_h_GUID_B6F81E02_BE7B_4382_12E5_87296135997D
+#pragma once
 
 // Internal Includes
 #include "BasicTypes.h"
@@ -75,26 +74,22 @@ namespace vbtracker {
     /// @brief Helper for implementations of LedIdentifier to turn a
     /// brightness list into a boolean list based on thresholding on the
     /// halfway point between minimum and maximum brightness.
-    inline LedPatternWrapped
+    inline uint16_t
     getBitsUsingThreshold(const BrightnessList &brightnesses, float threshold) {
-        LedPatternWrapped ret;
+        uint16_t ret = 0;
         // Allocate output space for our transform.
-        ret.resize(brightnesses.size());
+        if (brightnesses.size() > 8 * sizeof(ret))
+            return ret;
 
-        // Transform the brightnesses into a string with '.' for dim
-        // and '*' for bright.
-        std::transform(begin(brightnesses), end(brightnesses), begin(ret),
-                       [threshold](Brightness val) {
-                           if (val >= threshold) {
-                               return '*';
-                           } else {
-                               return '.';
-                           }
-                       });
-
+        // Transform the brightnesses into bits with 0 for dim
+        // and 1 for bright.
+        for (auto val: brightnesses) {
+            ret <<= 1;
+            if (val >= threshold) {
+                ret |= 1;
+            }
+        }
         return ret;
     }
 } // End namespace vbtracker
 } // End namespace osvr
-
-#endif // INCLUDED_IdentifierHelpers_h_GUID_B6F81E02_BE7B_4382_12E5_87296135997D

@@ -22,8 +22,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef INCLUDED_LedMeasurement_h_GUID_FB847F67_347B_4C8E_AC9B_33179ED6B0E6
-#define INCLUDED_LedMeasurement_h_GUID_FB847F67_347B_4C8E_AC9B_33179ED6B0E6
+#pragma once
 
 // Internal Includes
 #include "BasicTypes.h"
@@ -41,7 +40,7 @@ namespace vbtracker {
     struct LedMeasurement {
       private:
         static float estimateArea(float diameter) {
-            return static_cast<float>((diameter / 2) * (diameter / 2) * CV_PI);
+            return static_cast<float>(diameter * diameter * CV_PI / 4.0);
         }
 
       public:
@@ -140,4 +139,3 @@ namespace vbtracker {
 
 } // namespace vbtracker
 } // namespace osvr
-#endif // INCLUDED_LedMeasurement_h_GUID_FB847F67_347B_4C8E_AC9B_33179ED6B0E6

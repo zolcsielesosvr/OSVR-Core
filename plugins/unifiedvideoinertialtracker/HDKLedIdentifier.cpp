@@ -66,25 +66,21 @@ namespace vbtracker {
         // sure each have the correct length.
 
         for (auto &pat : PATTERNS) {
-            if (pat.empty() || pat.find_first_not_of(VALIDCHARS) != pat.npos) {
-                // This is an intentionally disabled beacon/pattern.
-                d_patterns.emplace_back();
-                continue;
+            uint16_t code = 0;
+            if (!pat.empty() && pat.find_first_not_of(VALIDCHARS) == pat.npos) {    // Use 0 for an intentionally disabled beacon/pattern.
+                // Make sure the pattern is the correct length.
+                if (pat.size() != d_length) {
+                    throw std::runtime_error("Got a pattern of incorrect length!");
+                }
+
+                for (int i = pat.size(); --i >= 0;) {
+                    code <<= 1;
+                    if (pat[i] == '*')
+                        code |= 1;
+                }
             }
 
-            // Make sure the pattern is the correct length.
-            if (pat.size() != d_length) {
-                throw std::runtime_error("Got a pattern of incorrect length!");
-            }
-
-            // Make a wrapped pattern, which is the original pattern plus
-            // a second copy of the pattern that has all but the last
-            // character in it.  This will enable use to use the string
-            // find() routine to see if any shift of the pattern is a
-            // match.
-            auto wrapped = pat + pat;
-            wrapped.pop_back();
-            d_patterns.push_back(std::move(wrapped));
+            d_patterns.emplace_back(code);
         }
     }
 
@@ -95,8 +91,7 @@ namespace vbtracker {
         // If we don't have at least the required number of frames of data, we
         // don't know anything.
         if (brightnesses.size() < d_length) {
-            return ZeroBasedBeaconId(
-                Led::SENTINEL_NO_IDENTIFIER_OBJECT_OR_INSUFFICIENT_DATA);
+            return Led::SENTINEL_NO_IDENTIFIER_OBJECT_OR_INSUFFICIENT_DATA;
         }
 
         // We only care about the d_length most-recent levels.
@@ -112,8 +107,7 @@ namespace vbtracker {
         // pixels, and it's being under-estimated by OpenCV.
         static const double TODO_MIN_BRIGHTNESS_DIFF = 0.3;
         if (maxVal - minVal <= TODO_MIN_BRIGHTNESS_DIFF) {
-            return ZeroBasedBeaconId(
-                Led::SENTINEL_INSUFFICIENT_EXTREMA_DIFFERENCE);
+            return Led::SENTINEL_INSUFFICIENT_EXTREMA_DIFFERENCE;
         }
         const auto threshold = (minVal + maxVal) / 2;
         // Set the `lastBright` out variable
@@ -126,29 +120,32 @@ namespace vbtracker {
 
         // Get a list of boolean values for 0's and 1's using
         // the threshold computed above.
-        auto bits = getBitsUsingThreshold(brightnesses, threshold);
+        uint16_t bits = getBitsUsingThreshold(brightnesses, threshold);
+        if (!bits)
+            return Led::SENTINEL_NO_PATTERN_RECOGNIZED_DESPITE_SUFFICIENT_DATA;
 
         // Search through the available patterns to see if the passed-in
         // pattern matches any of them.  If so, return that pattern.  We
         // need to check all potential rotations of the pattern, since we
         // don't know when the code started.  For the HDK, the codes are
-        // rotationally invariant.  We do this by making wrapped strings
-        // and seeing if the pattern shows up anywhe in them, relying on
-        // the std::string find method to do efficiently.
+        // rotationally invariant.
         for (size_t i = 0; i < d_patterns.size(); i++) {
-            if (d_patterns[i].empty()) {
+            if (!d_patterns[i]) {
                 /// Skip turned-off patterns.
                 continue;
             }
-            if (d_patterns[i].find(bits) != std::string::npos) {
-                return ZeroBasedBeaconId(i);
+            uint16_t code = d_patterns[i];
+            int j = d_length;
+            while ( --j >= 0) {
+                if (code == bits)
+                    return ZeroBasedBeaconId(i);
+                code = (code >> 1) | ((code << (d_length - 1)) & ((1 << d_length) - 1));
             }
         }
 
         // No pattern recognized and we should have recognized one, so return
         // a low negative.  We've used -2 so return -3.
-        return ZeroBasedBeaconId(
-            Led::SENTINEL_NO_PATTERN_RECOGNIZED_DESPITE_SUFFICIENT_DATA);
+        return Led::SENTINEL_NO_PATTERN_RECOGNIZED_DESPITE_SUFFICIENT_DATA;
     }
 
 } // End namespace vbtracker

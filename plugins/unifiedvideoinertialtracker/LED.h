@@ -46,13 +46,13 @@ namespace vbtracker {
     /// be a light source.
     class Led {
       public:
-        static const int SENTINEL_NO_IDENTIFIER_OBJECT_OR_INSUFFICIENT_DATA =
-            -1;
-        static const int SENTINEL_INSUFFICIENT_EXTREMA_DIFFERENCE = -2;
-        static const int
-            SENTINEL_NO_PATTERN_RECOGNIZED_DESPITE_SUFFICIENT_DATA = -3;
-        static const int SENTINEL_NO_IDENTIFIER_OBJECT = -4;
-        static const int SENTINEL_MARKED_MISIDENTIFIED = -5;
+        static const ZeroBasedBeaconId
+            SENTINEL_NO_IDENTIFIER_OBJECT_OR_INSUFFICIENT_DATA;
+        static const ZeroBasedBeaconId SENTINEL_INSUFFICIENT_EXTREMA_DIFFERENCE;
+        static const ZeroBasedBeaconId
+            SENTINEL_NO_PATTERN_RECOGNIZED_DESPITE_SUFFICIENT_DATA;
+        static const ZeroBasedBeaconId SENTINEL_NO_IDENTIFIER_OBJECT;
+        static const ZeroBasedBeaconId SENTINEL_MARKED_MISIDENTIFIED;
 
         /// @name Constructors
         /// @brief Constructor takes initial values for the location and
@@ -163,8 +163,7 @@ namespace vbtracker {
 
         /// @brief Which LED am I? Non-negative are indices, negative are
         /// sentinels
-        ZeroBasedBeaconId m_id =
-            ZeroBasedBeaconId(SENTINEL_NO_IDENTIFIER_OBJECT);
+        ZeroBasedBeaconId m_id = SENTINEL_NO_IDENTIFIER_OBJECT;
 
         /// @brief Object used to determine the identity of an LED
         LedIdentifier *m_identifier = nullptr;
