@@ -68,7 +68,8 @@ namespace vbtracker {
         virtual ZeroBasedBeaconId getId(ZeroBasedBeaconId currentId,
                                         BrightnessList &brightnesses,
                                         bool &lastBright,
-                                        bool blobsKeepId) const = 0;
+                                        bool blobsKeepId) = 0;
+        virtual void nextFrame() = 0;
 
       protected:
     };

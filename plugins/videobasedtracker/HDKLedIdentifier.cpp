@@ -73,7 +73,7 @@ namespace vbtracker {
                     throw std::runtime_error("Got a pattern of incorrect length!");
                 }
 
-                for (int i = pat.size(); --i >= 0;) {
+                for (int i = 0; i < pat.size(); ++i) {
                     code <<= 1;
                     if (pat[i] == '*')
                         code |= 1;
@@ -82,11 +82,43 @@ namespace vbtracker {
 
             d_patterns.emplace_back(code);
         }
+        match_at_rotation.fill(0);
+    }
+
+    void OsvrHdkLedIdentifier::rotatePatterns(uint8_t count)
+    {
+        for (auto &pat: d_patterns)
+            pat = ((pat << count) & ((1 << d_length) - 1)) | (pat >> (d_length - count));
+    }
+
+    void OsvrHdkLedIdentifier::nextFrame()
+    {
+        int d = detected_patterns;
+        uint8_t rotation = 1;
+        if (!isInSync()) {
+            detected_patterns = 0;
+            for (int i = 0; i < match_at_rotation.size(); i++) {
+                if (match_at_rotation[i] > detected_patterns) {
+                    detected_patterns = match_at_rotation[i];
+                    rotation = i + 1;
+                }
+            }
+        }
+
+        if (detected_patterns >= 3)
+            fail_count = 0;
+        else if (fail_count < max_fail_count)
+            ++fail_count;
+        detected_patterns = 0;
+        rotatePatterns(rotation);
+        if (!isInSync()) {
+            match_at_rotation.fill(0);
+        }
     }
 
     int OsvrHdkLedIdentifier::getId(int currentId,
                                     BrightnessList &brightnesses,
-                                    bool &lastBright, bool blobsKeepId) const {
+                                    bool &lastBright, bool blobsKeepId) {
         // If we don't have at least the required number of frames of data, we
         // don't know anything.
         if (brightnesses.size() < d_length) {
@@ -113,6 +145,7 @@ namespace vbtracker {
         lastBright = brightnesses.back() >= threshold;
 
         if (blobsKeepId && currentId >= 0) {
+            ++detected_patterns;
             // Early out if we already have identified this LED.
             return currentId;
         }
@@ -120,31 +153,40 @@ namespace vbtracker {
         // Get a list of boolean values for 0's and 1's using
         // the threshold computed above.
         uint16_t bits = getBitsUsingThreshold(brightnesses, threshold);
+
+        return detectPattern(currentId, bits);
+    }
+
+    int OsvrHdkLedIdentifier::detectPattern(int currentId, uint16_t bits)
+    {
+        // No pattern recognized and we should have recognized one, so return
+        // a low negative.  We've used -2 so return -3.
+        int id = Led::SENTINEL_NO_PATTERN_RECOGNIZED_DESPITE_SUFFICIENT_DATA;
         if (!bits)
-            return Led::SENTINEL_NO_PATTERN_RECOGNIZED_DESPITE_SUFFICIENT_DATA;
+            return id;
 
         // Search through the available patterns to see if the passed-in
-        // pattern matches any of them.  If so, return that pattern.  We
-        // need to check all potential rotations of the pattern, since we
-        // don't know when the code started.  For the HDK, the codes are
-        // rotationally invariant.
-        for (size_t i = 0; i < d_patterns.size(); i++) {
-            if (!d_patterns[i]) {
-                /// Skip turned-off patterns.
-                continue;
+        // pattern matches any of them.  If so, return that pattern.
+        if (isInSync()) {
+            auto it = std::find(d_patterns.begin(), d_patterns.end(), bits);
+            if (it != d_patterns.end()) {
+                ++detected_patterns;
+                id = it - d_patterns.begin();
             }
-            uint16_t code = d_patterns[i];
-            int j = d_length;
-            while ( --j >= 0) {
-                if (code == bits)
-                    return static_cast<int>(i);
-                code = (code >> 1) | ((code << (d_length - 1)) & ((1 << d_length) - 1));
+        } else {
+            for (int i = 0; i < d_length; i++) {
+                auto it = std::find(d_patterns.begin(), d_patterns.end(), bits);
+                if (it != d_patterns.end()) {
+                    ++detected_patterns;
+                    match_at_rotation[i]++;
+                    id = it - d_patterns.begin();
+                    break;
+                }
+                bits = (bits >> 1) | ((bits << (d_length - 1)) & ((1 << d_length) - 1));
             }
         }
 
-        // No pattern recognized and we should have recognized one, so return
-        // a low negative.  We've used -2 so return -3.
-        return Led::SENTINEL_NO_PATTERN_RECOGNIZED_DESPITE_SUFFICIENT_DATA;
+        return id;
     }
 
 } // End namespace vbtracker

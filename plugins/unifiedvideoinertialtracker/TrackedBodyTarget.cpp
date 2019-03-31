@@ -354,6 +354,7 @@ namespace vbtracker {
                       << assignment.theoreticalMaxSize() << " (ratio "
                       << assignment.heapSizeFraction() << ")" << std::endl;
         }
+        m_impl->identifier->nextFrame();
         while (assignment.hasMoreMatches()) {
             auto ledAndMeasurement = assignment.getMatch();
             auto &led = ledAndMeasurement.first;

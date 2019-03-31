@@ -146,6 +146,7 @@ namespace vbtracker {
         // of LEDs for each and try to find them.  It is assumed that they all
         // have unique ID patterns across all sensors.
         for (size_t sensor = 0; sensor < m_identifiers.size(); sensor++) {
+            m_identifiers[sensor]->nextFrame();
 
             osvrPose3SetIdentity(&m_pose);
             auto ledsMeasurements = undistortedLeds;
@@ -163,7 +164,7 @@ namespace vbtracker {
                 auto &myLeds = m_led_groups[sensor];
                 auto led = begin(myLeds);
                 auto e = end(myLeds);
-                while (led != end(myLeds)) {
+                while (led != e) {
                     led->resetUsed();
                     auto threshold = m_params.blobMoveThreshold *
                                      led->getMeasurement().diameter;

@@ -52,11 +52,22 @@ namespace vbtracker {
         /// large and wasting time and space.
         ZeroBasedBeaconId getId(ZeroBasedBeaconId currentId,
                                 BrightnessList &brightnesses, bool &lastBright,
-                                bool blobsKeepId) const override;
+                                bool blobsKeepId) override;
+
+        void nextFrame() override;
 
       private:
-        uint8_t d_length;        //< Length of all patterns
+        void rotatePatterns(uint8_t count = 1);
+        bool isInSync() {return fail_count < 3;}
+        ZeroBasedBeaconId detectPattern(ZeroBasedBeaconId currentId, uint16_t bits);
+
+        static const uint8_t max_fail_count = std::numeric_limits<uint8_t>::max();
+
         std::vector<uint16_t> d_patterns; //< Patterns by index
+        uint8_t d_length;        //< Length of all patterns
+        uint8_t detected_patterns = 0;
+        uint8_t fail_count = max_fail_count;
+        std::array<uint8_t, 16> match_at_rotation;
     };
 
 } // End namespace vbtracker
