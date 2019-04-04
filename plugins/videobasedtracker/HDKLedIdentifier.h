@@ -56,7 +56,6 @@ namespace vbtracker {
         void nextFrame() override;
 
       private:
-        void rotatePatterns(uint8_t count = 1);
         bool isInSync() {return fail_count < 3;}
         int detectPattern(int currentId, uint16_t bits);
 
@@ -66,7 +65,8 @@ namespace vbtracker {
         uint8_t d_length;        //< Length of all patterns
         uint8_t detected_patterns = 0;
         uint8_t fail_count = max_fail_count;
-        std::array<uint8_t, 16> match_at_rotation;
+        uint8_t mRotation = 0;
+        std::array<uint8_t, 16> matches_at_rotation;
     };
 
 } // End namespace vbtracker

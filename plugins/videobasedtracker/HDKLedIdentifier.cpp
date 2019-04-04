@@ -82,37 +82,31 @@ namespace vbtracker {
 
             d_patterns.emplace_back(code);
         }
-        match_at_rotation.fill(0);
-    }
-
-    void OsvrHdkLedIdentifier::rotatePatterns(uint8_t count)
-    {
-        for (auto &pat: d_patterns)
-            pat = ((pat << count) & ((1 << d_length) - 1)) | (pat >> (d_length - count));
+        matches_at_rotation.fill(0);
     }
 
     void OsvrHdkLedIdentifier::nextFrame()
     {
-        int d = detected_patterns;
-        uint8_t rotation = 1;
         if (!isInSync()) {
             detected_patterns = 0;
-            for (int i = 0; i < match_at_rotation.size(); i++) {
-                if (match_at_rotation[i] > detected_patterns) {
-                    detected_patterns = match_at_rotation[i];
-                    rotation = i + 1;
+            for (int i = 0; i < matches_at_rotation.size(); i++) {
+                if (matches_at_rotation[i] > detected_patterns) {
+                    detected_patterns = matches_at_rotation[i];
+                    mRotation = i + 1;
                 }
             }
+        } else {
+            ++mRotation;
         }
+        mRotation %= 16;
 
         if (detected_patterns >= 3)
             fail_count = 0;
         else if (fail_count < max_fail_count)
             ++fail_count;
         detected_patterns = 0;
-        rotatePatterns(rotation);
         if (!isInSync()) {
-            match_at_rotation.fill(0);
+            matches_at_rotation.fill(0);
         }
     }
 
@@ -168,6 +162,7 @@ namespace vbtracker {
         // Search through the available patterns to see if the passed-in
         // pattern matches any of them.  If so, return that pattern.
         if (isInSync()) {
+            bits = (bits >> mRotation) | ((bits << (d_length - mRotation)) & ((1 << d_length) - 1));
             auto it = std::find(d_patterns.begin(), d_patterns.end(), bits);
             if (it != d_patterns.end()) {
                 ++detected_patterns;
@@ -178,7 +173,7 @@ namespace vbtracker {
                 auto it = std::find(d_patterns.begin(), d_patterns.end(), bits);
                 if (it != d_patterns.end()) {
                     ++detected_patterns;
-                    match_at_rotation[i]++;
+                    matches_at_rotation[i]++;
                     id = it - d_patterns.begin();
                     break;
                 }

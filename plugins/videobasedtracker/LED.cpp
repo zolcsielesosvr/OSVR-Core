@@ -74,28 +74,20 @@ namespace vbtracker {
     KeyPointIterator Led::nearest(KeyPointList &keypoints,
                                   double threshold) const {
         // If we have no elements in the vector, return the end().
+        auto ret = end(keypoints);
         if (keypoints.empty()) {
-            return end(keypoints);
+            return ret;
         }
 
         // Squaring the threshold to avoid doing a square-root in a tight loop.
         auto thresholdSquared = threshold * threshold;
         auto location = getLocation();
+        float minDistSq = std::numeric_limits<float>::infinity();
 
-        auto computeDistSquared = [location](KeyPointIterator it) {
-            auto diff = (location - it->pt);
-            return diff.dot(diff);
-        };
-
-        // Find the distance to the first point and record it as the
-        // current minimum distance;
-        auto ret = begin(keypoints);
-        auto minDistSq = computeDistSquared(ret);
-
-        // Search the rest of the elements to see if we can find a
-        // better one.
+        // Search all elements for the nearest one.
         for (auto it = begin(keypoints), e = end(keypoints); it != e; ++it) {
-            auto distSq = computeDistSquared(it);
+            auto diff = location - it->pt;
+            auto distSq = diff.dot(diff);
             if (distSq < minDistSq) {
                 minDistSq = distSq;
                 ret = it;
@@ -113,28 +105,20 @@ namespace vbtracker {
     LedMeasurementIterator Led::nearest(LedMeasurementList &meas,
                                         double threshold) const {
         // If we have no elements in the vector, return the end().
+        auto ret = end(meas);
         if (meas.empty()) {
-            return end(meas);
+            return ret;
         }
 
         // Squaring the threshold to avoid doing a square-root in a tight loop.
         auto thresholdSquared = threshold * threshold;
         auto location = getLocation();
+        float minDistSq = std::numeric_limits<float>::infinity();
 
-        auto computeDistSquared = [location](LedMeasurementIterator it) {
-            auto diff = (location - it->loc);
-            return diff.dot(diff);
-        };
-
-        // Find the distance to the first point and record it as the
-        // current minimum distance;
-        auto ret = begin(meas);
-        auto minDistSq = computeDistSquared(ret);
-
-        // Search the rest of the elements to see if we can find a
-        // better one.
+        // Search all elements for the nearest one.
         for (auto it = begin(meas), e = end(meas); it != e; ++it) {
-            auto distSq = computeDistSquared(it);
+            auto diff = location - it->loc;
+            auto distSq = diff.dot(diff);
             if (distSq < minDistSq) {
                 minDistSq = distSq;
                 ret = it;
