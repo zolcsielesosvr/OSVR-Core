@@ -32,6 +32,7 @@
 
 // Standard includes
 #include <stdexcept>
+#include <iostream>
 
 namespace osvr {
 namespace vbtracker {
@@ -95,10 +96,22 @@ namespace vbtracker {
                     mRotation = i + 1;
                 }
             }
+            corrected_patterns = d_patterns;
         } else {
             ++mRotation;
+            uint16_t mask = 1 << ((d_length - mRotation) % d_length);
+            if (loss_detect > 3) {
+                std::cout << "Frame loss detected!" << std::endl;
+                for (int i = 0; i < d_patterns.size(); i++)
+                    corrected_patterns[i] = rotate(corrected_patterns[i], 1);
+                ++mRotation;
+                mask |= 1 << ((d_length - mRotation) % d_length);
+            }
+            for (int i = 0; i < d_patterns.size(); i++)
+                corrected_patterns[i] = (corrected_patterns[i] & ~mask) | (d_patterns[i] & mask);
         }
-        mRotation %= 16;
+        mRotation %= d_length;
+        loss_detect = 0;
 
         if (detected_patterns >= 3)
             fail_count = 0;
@@ -147,7 +160,6 @@ namespace vbtracker {
         // Get a list of boolean values for 0's and 1's using
         // the threshold computed above.
         uint16_t bits = getBitsUsingThreshold(brightnesses, threshold);
-
         return detectPattern(currentId, bits);
     }
 
@@ -162,11 +174,21 @@ namespace vbtracker {
         // Search through the available patterns to see if the passed-in
         // pattern matches any of them.  If so, return that pattern.
         if (isInSync()) {
-            bits = (bits >> mRotation) | ((bits << (d_length - mRotation)) & ((1 << d_length) - 1));
-            auto it = std::find(d_patterns.begin(), d_patterns.end(), bits);
-            if (it != d_patterns.end()) {
+            bits = rotate(bits, mRotation);
+            auto it = std::find(corrected_patterns.begin(), corrected_patterns.end(), bits);
+            if (it != corrected_patterns.end()) {
                 ++detected_patterns;
-                id = it - d_patterns.begin();
+                id = it - corrected_patterns.begin();
+            } else if (currentId >= 0) {
+                uint16_t pattern = corrected_patterns[currentId];
+                if (mRotation)
+	            pattern = (pattern & ~(1 << (d_length - mRotation))) | (pattern & (1 << (d_length - mRotation - 1))) << 1;
+                else
+                    pattern = (pattern & ~1) | pattern >> (d_length - 1);
+                if (pattern == bits) {
+                    ++loss_detect;
+                    id = currentId;
+                }
             }
         } else {
             for (int i = 0; i < d_length; i++) {

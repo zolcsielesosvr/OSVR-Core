@@ -56,14 +56,21 @@ namespace vbtracker {
         void nextFrame() override;
 
       private:
+        uint16_t rotate(uint16_t bits, uint8_t rotation) const
+        {
+            return (bits >> rotation) | (bits << (d_length - rotation));
+        }
+
         bool isInSync() {return fail_count < 3;}
         int detectPattern(int currentId, uint16_t bits);
 
         static const uint8_t max_fail_count = std::numeric_limits<uint8_t>::max();
 
         std::vector<uint16_t> d_patterns; //< Patterns by index
+        std::vector<uint16_t> corrected_patterns; //< Frame loss corrected patterns by index
         uint8_t d_length;        //< Length of all patterns
         uint8_t detected_patterns = 0;
+        uint8_t loss_detect = 0;
         uint8_t fail_count = max_fail_count;
         uint8_t mRotation = 0;
         std::array<uint8_t, 16> matches_at_rotation;
