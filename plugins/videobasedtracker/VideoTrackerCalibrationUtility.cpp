@@ -430,9 +430,9 @@ int main(int argc, char *argv[]) {
     }
 
     /// Second step: Adjust the config slightly.
-    params.debug = false;
-    params.extraVerbose = false;         // don't need those messages
-    params.streamBeaconDebugInfo = true; // want the data being recorded there.
+    params.debug = root.get("debug", false).asBool();
+    params.extraVerbose = root.get("extraVerbose", false).asBool();         // don't need those messages
+    params.streamBeaconDebugInfo = root.get("streamBeaconDebugInfo", true).asBool(); // want the data being recorded there.
 
     /// Third step: Open cam and construct a tracker.
     const Json::Value *srcParams = getSourceParams(root);
