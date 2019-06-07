@@ -168,18 +168,30 @@ namespace vbtracker {
                     led->resetUsed();
                     auto threshold = m_params.blobMoveThreshold *
                                      led->getMeasurement().diameter;
-                    auto nearest = led->nearest(ledsMeasurements, threshold);
+                    float distSq;
+                    auto nearest = led->nearest(ledsMeasurements, threshold, distSq);
                     if (nearest == end(ledsMeasurements)) {
                         // We have no blob corresponding to this LED, so we need
                         // to delete this LED.
                         led = myLeds.erase(led);
                     } else {
+                        // Remove duplicates from leds
+                        auto collision = std::find_if(begin(myLeds), led, [nearest](const Led &led) {return led.getMeasurement() == *nearest;});
+                        if (collision != led) {
+                            if (collision->getDistSq() <= distSq) {
+                                led = myLeds.erase(led);
+                                continue;
+                            }
+                            myLeds.erase(collision);
+                        }
+
                         // Update the values in this LED and then go on to the
                         // next one. Remove this blob from the list of
                         // potential matches.
                         led->addMeasurement(*nearest,
-                                            m_params.blobsKeepIdentity);
-                        ledsMeasurements.erase(nearest);
+                                            m_params.blobsKeepIdentity,
+                                            distSq);
+                        nearest->isUsed = true;
                         ++led;
                     }
                 }
@@ -187,9 +199,11 @@ namespace vbtracker {
                 // LED, then we add a new LED for each of them.
                 // std::cout << "Had " << Leds.size() << " LEDs, " <<
                 // keyPoints.size() << " new ones available" << std::endl;
-                for (auto &remainingLed : ledsMeasurements) {
+                for (auto &measurement: ledsMeasurements) {
+                    if (measurement.isUsed)
+                        continue;
                     myLeds.emplace_back(m_identifiers[sensor].get(),
-                                        remainingLed);
+                                        measurement);
                 }
             }
             //==================================================================

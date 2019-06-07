@@ -75,6 +75,10 @@ namespace vbtracker {
         /// instance, not all identified beacons may be good choices to use in
         /// determining tracking pose)
         void addMeasurement(LedMeasurement const &meas, bool blobsKeepId);
+        void addMeasurement(LedMeasurement const &meas, bool blobsKeepId, float distSq) {
+            addMeasurement(meas, blobsKeepId);
+            m_distSq = distSq;
+        }
 
         LedMeasurement const &getMeasurement() const {
             return m_latestMeasurement;
@@ -106,6 +110,8 @@ namespace vbtracker {
         /// @brief Reports the most-recently-added position.
         cv::Point2f getLocation() const { return m_latestMeasurement.loc; }
 
+        float getDistSq() { return m_distSq; }
+
         /// @brief Gets the most-recently-added position, in a
         /// xy-origin-at-bottom-left coordinate system
         cv::Point2f getInverseLocation() const {
@@ -131,11 +137,13 @@ namespace vbtracker {
         /// @return end() if there is not a nearest within threshold (or an
         /// empty container).
         KeyPointIterator nearest(KeyPointList &keypoints,
-                                 double threshold) const;
+                                 double threshold,
+                                 float &minDistSq) const;
 
         /// @overload
         LedMeasurementVecIterator nearest(LedMeasurementVec &meas,
-                                          double threshold) const;
+                                          double threshold,
+                                          float &minDistSq) const;
 
         /// @brief Returns the most-recent boolean "bright" state according to
         /// the LED identifier. Note that the value is only meaningful if
@@ -167,6 +175,8 @@ namespace vbtracker {
 
         /// @brief Object used to determine the identity of an LED
         LedIdentifier *m_identifier = nullptr;
+
+        float m_distSq = std::numeric_limits<float>::infinity();
 
         /// @brief If identified, whether it is most recently in "bright" mode.
         bool m_lastBright = false;

@@ -72,7 +72,8 @@ namespace vbtracker {
     }
 
     KeyPointIterator Led::nearest(KeyPointList &keypoints,
-                                  double threshold) const {
+                                  double threshold,
+                                  float &minDistSq) const {
         // If we have no elements in the vector, return the end().
         auto ret = end(keypoints);
         if (keypoints.empty()) {
@@ -82,7 +83,7 @@ namespace vbtracker {
         // Squaring the threshold to avoid doing a square-root in a tight loop.
         auto thresholdSquared = threshold * threshold;
         auto location = getLocation();
-        float minDistSq = std::numeric_limits<float>::infinity();
+        minDistSq = std::numeric_limits<float>::infinity();
 
         // Search all elements for the nearest one.
         for (auto it = begin(keypoints), e = end(keypoints); it != e; ++it) {
@@ -103,7 +104,8 @@ namespace vbtracker {
     }
 
     LedMeasurementIterator Led::nearest(LedMeasurementList &meas,
-                                        double threshold) const {
+                                        double threshold,
+                                        float &minDistSq) const {
         // If we have no elements in the vector, return the end().
         auto ret = end(meas);
         if (meas.empty()) {
@@ -113,7 +115,7 @@ namespace vbtracker {
         // Squaring the threshold to avoid doing a square-root in a tight loop.
         auto thresholdSquared = threshold * threshold;
         auto location = getLocation();
-        float minDistSq = std::numeric_limits<float>::infinity();
+        minDistSq = std::numeric_limits<float>::infinity();
 
         // Search all elements for the nearest one.
         for (auto it = begin(meas), e = end(meas); it != e; ++it) {

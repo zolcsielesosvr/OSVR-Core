@@ -90,6 +90,8 @@ namespace vbtracker {
         /// Blob circularity (as defined by OpenCV) - in [0,1]
         float circularity = 0.f;
 
+        bool isUsed = false;
+
         /// Do we know an upright bounding box? (that is, is the next member
         /// valid?)
         bool knowBoundingBox() const { return knowBoundingBox_; }
