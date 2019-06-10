@@ -99,13 +99,14 @@ namespace vbtracker {
             corrected_patterns = d_patterns;
         } else {
             ++mRotation;
-            uint16_t mask = 1 << ((d_length - mRotation) % d_length);
+            uint16_t mask = 1 << (d_length - mRotation);
             if (loss_detect > 3) {
                 std::cout << "Frame loss detected!" << std::endl;
                 for (int i = 0; i < d_patterns.size(); i++)
                     corrected_patterns[i] = rotate(corrected_patterns[i], 1);
-                ++mRotation;
-                mask |= 1 << ((d_length - mRotation) % d_length);
+                if (++mRotation > 16)
+                    mRotation -= 16;
+                mask |= 1 << (d_length - mRotation);
             }
             for (int i = 0; i < d_patterns.size(); i++)
                 corrected_patterns[i] = (corrected_patterns[i] & ~mask) | (d_patterns[i] & mask);
