@@ -90,7 +90,7 @@ namespace vbtracker {
     {
         if (isInSync()) {
             uint16_t mask = 1 << (d_length - mRotation - 1);
-            if (loss_detect > 3) {
+            if (loss_detect > sync_detect + 1) {
                 std::cout << "Frame loss detected!" << std::endl;
                 for (int i = 0; i < d_patterns.size(); i++)
                     corrected_patterns[i] = rotate(corrected_patterns[i], 1);
@@ -112,7 +112,7 @@ namespace vbtracker {
         }
         if (++mRotation >= 16)
             mRotation -= 16;
-        loss_detect = 0;
+        sync_detect = loss_detect = 0;
 
         if (detected_patterns >= 3)
             fail_count = 0;
@@ -182,12 +182,15 @@ namespace vbtracker {
             if (it != corrected_patterns.end()) {
                 ++detected_patterns;
                 id = ZeroBasedBeaconId(it - corrected_patterns.begin());
+                uint8_t lastBits = rotate(*it, d_length - mRotation - 1) & 3;
+                if ((lastBits & 1) ^ (lastBits >> 1))
+                    ++sync_detect;
             } else if (beaconIdentified(currentId)) {
                 uint16_t pattern = corrected_patterns[currentId.value()];
                 if (mRotation)
-	            pattern = (pattern & ~(1 << (d_length - mRotation))) | (pattern & (1 << (d_length - mRotation - 1))) << 1;
+	            pattern = (pattern & ~(1 << (d_length - mRotation))) | (d_patterns[currentId.value()] & (1 << (d_length - mRotation - 1))) << 1;
                 else
-                    pattern = (pattern & ~1) | pattern >> (d_length - 1);
+                    pattern = (pattern & ~1) | d_patterns[currentId.value()] >> (d_length - 1);
                 if (pattern == bits) {
                     ++loss_detect;
                     id = currentId;

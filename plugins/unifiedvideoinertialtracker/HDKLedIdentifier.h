@@ -71,7 +71,7 @@ namespace vbtracker {
         std::vector<uint16_t> corrected_patterns; //< Frame loss corrected patterns by index
         uint8_t d_length;        //< Length of all patterns
         uint8_t detected_patterns = 0;
-        uint8_t loss_detect = 0;
+        uint8_t sync_detect = 0, loss_detect = 0;
         uint8_t fail_count = max_fail_count;
         uint8_t mRotation = 0;
         std::array<uint8_t, 16> matches_at_rotation;
