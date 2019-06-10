@@ -88,30 +88,30 @@ namespace vbtracker {
 
     void OsvrHdkLedIdentifier::nextFrame()
     {
-        if (!isInSync()) {
-            detected_patterns = 0;
-            for (int i = 0; i < matches_at_rotation.size(); i++) {
-                if (matches_at_rotation[i] > detected_patterns) {
-                    detected_patterns = matches_at_rotation[i];
-                    mRotation = i + 1;
-                }
-            }
-            corrected_patterns = d_patterns;
-        } else {
-            ++mRotation;
-            uint16_t mask = 1 << (d_length - mRotation);
+        if (isInSync()) {
+            uint16_t mask = 1 << (d_length - mRotation - 1);
             if (loss_detect > 3) {
                 std::cout << "Frame loss detected!" << std::endl;
                 for (int i = 0; i < d_patterns.size(); i++)
                     corrected_patterns[i] = rotate(corrected_patterns[i], 1);
-                if (++mRotation > 16)
+                if (++mRotation >= 16)
                     mRotation -= 16;
-                mask |= 1 << (d_length - mRotation);
+                mask |= 1 << (d_length - mRotation - 1);
             }
             for (int i = 0; i < d_patterns.size(); i++)
                 corrected_patterns[i] = (corrected_patterns[i] & ~mask) | (d_patterns[i] & mask);
+        } else {
+            detected_patterns = 0;
+            for (int i = 0; i < matches_at_rotation.size(); i++) {
+                if (matches_at_rotation[i] > detected_patterns) {
+                    detected_patterns = matches_at_rotation[i];
+                    mRotation = i;
+                }
+            }
+            corrected_patterns = d_patterns;
         }
-        mRotation %= d_length;
+        if (++mRotation >= 16)
+            mRotation -= 16;
         loss_detect = 0;
 
         if (detected_patterns >= 3)
