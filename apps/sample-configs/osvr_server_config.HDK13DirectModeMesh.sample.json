@@ -6,6 +6,10 @@
         "plugin": "com_osvr_VideoBasedHMDTracker",
         "driver": "VideoBasedHMDTracker",
         "params": {
+            "blobParams": {
+                "minThresholdAlpha": 0.5,
+                "maxThresholdAlpha": 0.8
+            },
             "showDebug": false,
             "includeRearPanel": true,
             "headCircumference": 55.75,
